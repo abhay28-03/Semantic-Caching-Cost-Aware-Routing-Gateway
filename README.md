@@ -28,23 +28,42 @@ A high-performance LLM gateway engineered to reduce cloud inference costs and AP
 ---
 
 ## Architecture Overview
-Client Prompt
-│
-▼
-Local Embeddings (all-MiniLM-L6-v2) ──► 384-d Vector
-│
-▼
-Redis Stack HNSW Index (idx:semantic_cache)
-│
-┌────┴───────────────────────────┐
-│ Similarity >= 0.88?             │
-├─── YES ──► Serve Cached Response (<16ms)
-└─── NO  ──► Semantic Centroid Router
-├─ Alignment < 0.25  ──► openai/gpt-oss-20b
-└─ Alignment >= 0.25 ──► openai/gpt-oss-120b
-│
-▼
-Store in Redis & Log Telemetry (Async Background)
+
+```mermaid
+flowchart TD
+    A["Client Prompt"] --> B["Local Embedding Model<br/>all-MiniLM-L6-v2"]
+    B --> C["384-Dimensional Vector"]
+    C --> D["Redis Stack<br/>HNSW Vector Index"]
+
+    D --> E{"Similarity Score ≥ 0.88?"}
+
+    E -->|Yes| F["Return Cached Response<br/>< 16 ms"]
+    E -->|No| G["Semantic Centroid Router"]
+
+    G --> H{"Alignment Score"}
+
+    H -->|Below 0.25| I["openai/gpt-oss-20b"]
+    H -->|0.25 or Above| J["openai/gpt-oss-120b"]
+
+    I --> K["Generate Response"]
+    J --> K
+
+    K --> L["Store Response in Redis"]
+    K --> M["Log Telemetry<br/>Async Background Task"]
+
+    L --> N["Future Cache Hits"]
+    
+    classDef input fill:#1e3a5f,stroke:#60a5fa,color:#fff
+    classDef cache fill:#14532d,stroke:#4ade80,color:#fff
+    classDef router fill:#713f12,stroke:#facc15,color:#fff
+    classDef model fill:#4c1d95,stroke:#a78bfa,color:#fff
+    classDef output fill:#164e63,stroke:#22d3ee,color:#fff
+
+    class A,B,C input
+    class D,E,F,L,N cache
+    class G,H router
+    class I,J,K model
+    class M output
 
 ---
 
