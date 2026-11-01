@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis-vector-store
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    environment:
+      - REDIS_ARGS=--save 60 1000
+    volumes:
+      - redis_data:/data
+
+  gateway:
+    build: .
+    container_name: llm-gateway
+    restart: always
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
